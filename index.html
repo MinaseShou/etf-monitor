@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Active ETF Monitor</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
+        h1 { color: #333; }
+        p { color: #666; }
+    </style>
+    <!-- Auto-redirect to the report folder if a report exists -->
+    <script>
+        // Simple logic to find today's date or just show a message
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm = String(today.getMonth() + 1).padStart(2, '0');
+        var dd = String(today.getDate()).padStart(2, '0');
+        var dateStr = yyyy + mm + dd;
+        
+        // Attempt to redirect to today's report, user can edit if needed
+        // For now, we just link to the folder
+    </script>
+</head>
+<body>
+    <h1>Active ETF Monitor (Initial Setup)</h1>
+    <p>System is running...</p>
+    <p>Please wait for the automated report to be generated (approx. 18:00 daily).</p>
+    <p>Or check the data folder manually:</p>
+    <a href="etf_data/">View Data Folder</a>
+</body>
+</html>

@@ -40,5 +40,6 @@ jobs:
           echo "No changes to commit"
         else
           git commit -m "Auto-update ETF data and report: $(date +'%Y-%m-%d')"
-          git push
+          # Explicitly push with token to avoid permission errors
+          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main
         fi

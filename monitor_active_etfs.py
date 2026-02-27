@@ -41,16 +41,16 @@ class UnifiedScraper(ETFScraper):
         
         url = url_map.get(etf_code)
         if not url:
-            print(f"No known URL for {etf_code}. Please update url_map.")
+            print(f"找不到 {etf_code} 的對應網址，請更新 url_map。")
             return None
 
-        print(f"Fetching {url}... (This may take a moment)")
+        print(f"正在抓取 {url}...（可能需要一些時間）")
         
         try:
             response = requests.get(url, headers=self.headers, timeout=15)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching data for {etf_code}: {e}")
+            print(f"取得 {etf_code} 資料時發生錯誤：{e}")
             return None
 
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -67,7 +67,7 @@ class UnifiedScraper(ETFScraper):
                 break
         
         if not soup.find('div', id='DataAsset'):
-            print(f"Could not find DataAsset div for {etf_code}. Dumping HTML for debugging...")
+            print(f"找不到 {etf_code} 的 DataAsset 區塊，正在儲存 HTML 以供除錯...")
             self.save_debug_html(etf_code, response.text)
             return None
             
@@ -93,19 +93,19 @@ class UnifiedScraper(ETFScraper):
                         })
             
             if not holdings:
-                print(f"No stock holdings found in JSON data for {etf_code}")
+                print(f"在 {etf_code} 的 JSON 資料中找不到股票持倉")
                 return None
                 
             return pd.DataFrame(holdings)
             
         except Exception as e:
-            print(f"Error parsing JSON data for {etf_code}: {e}")
+            print(f"解析 {etf_code} 的 JSON 資料時發生錯誤：{e}")
             self.save_debug_html(etf_code, response.text)
             return None
 
 def monitor_etfs():
-    print("Starting Active ETF Monitor...")
-    print(f"Output directory: {os.path.abspath(OUTPUT_DIR)}")
+    print("開始執行主動型 ETF 監控程式...")
+    print(f"輸出目錄：{os.path.abspath(OUTPUT_DIR)}")
     
     # Active ETFs List
     # Users can add more here
@@ -119,14 +119,14 @@ def monitor_etfs():
     
     for etf in target_etfs:
         scraper = etf['scraper']
-        print(f"Processing {etf['code']}...")
+        print(f"正在處理 {etf['code']}...")
         df = scraper.fetch_holdings(etf['code'])
         if df is not None and not df.empty:
             all_data.append(df)
-            print(f"Successfully fetched {len(df)} constituents for {etf['code']}")
-            print(df.head()) # Show preview
+            print(f"成功取得 {etf['code']} 的 {len(df)} 筆成分股資料")
+            print(df.head()) # 顯示預覽
         else:
-            print(f"Failed to fetch data for {etf['code']}")
+            print(f"無法取得 {etf['code']} 的資料")
             
     if all_data:
         final_df = pd.concat(all_data)
@@ -135,7 +135,7 @@ def monitor_etfs():
         timestamp = datetime.now().strftime("%Y%m%d")
         filename = os.path.join(OUTPUT_DIR, f'etf_holdings_{timestamp}.csv')
         final_df.to_csv(filename, index=False, encoding='utf-8-sig')
-        print(f"\n[SUCCESS] Saved combined data to: {filename}")
+        print(f"\n[成功] 已儲存合併資料至：{filename}")
         
         # Comparison Logic
         try:
@@ -145,7 +145,7 @@ def monitor_etfs():
                 prev_file = os.path.join(OUTPUT_DIR, files[-2]) # Second to last is previous
                 curr_file = os.path.join(OUTPUT_DIR, files[-1]) # Last is current
                 
-                print(f"[INFO] Comparing {curr_file} with {prev_file}...")
+                print(f"[資訊] 正在比較 {curr_file} 與 {prev_file}...")
                 
                 df_curr = pd.read_csv(curr_file)
                 df_prev = pd.read_csv(prev_file)
@@ -167,15 +167,15 @@ def monitor_etfs():
                 generate_html_report(diff_data, timestamp)
                 
             else:
-                print("[INFO] Not enough history for comparison (need at least 2 days).")
+                print("[資訊] 歷史資料不足，無法進行比較（至少需要 2 天的資料）。")
         except Exception as e:
-            print(f"[ERROR] Comparison failed: {e}")
+            print(f"[錯誤] 比較作業失敗：{e}")
             import traceback
             traceback.print_exc()
 
         return final_df
     else:
-        print("\n[WARNING] No data fetched from any source.")
+        print("\n[警告] 未能從任何來源取得資料。")
     return None
 
 def compare_holdings(df_curr, df_prev):
@@ -241,7 +241,8 @@ def generate_html_report(diff_data, date_str):
     html_content = f"""
     <html>
     <head>
-        <title>Active ETF Daily Changes - {date_str}</title>
+        <meta charset="UTF-8">
+        <title>主動型 ETF 每日異動報告 - {date_str}</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; }}
             h1 {{ color: #333; }}
@@ -256,33 +257,33 @@ def generate_html_report(diff_data, date_str):
         </style>
     </head>
     <body>
-        <h1>Active ETF Holdings - Daily Change Report ({date_str})</h1>
+        <h1>主動型 ETF 持倉 - 每日異動報告（{date_str}）</h1>
     """
     
     for etf, data in diff_data.items():
-        html_content += f"<div class='etf-section'><h2>ETF Code: {etf}</h2>"
-        
-        # New Positions
+        html_content += f"<div class='etf-section'><h2>ETF 代碼：{etf}</h2>"
+
+        # 新增持股
         if not data['new'].empty:
-            html_content += "<h3>Found New Positions</h3><table><thead><tr><th>Stock ID</th><th>Name</th><th>Shares</th><th>Weight %</th></tr></thead><tbody>"
+            html_content += "<h3>新增持股</h3><table><thead><tr><th>股票代號</th><th>股票名稱</th><th>股數</th><th>權重 %</th></tr></thead><tbody>"
             for stock_id, row in data['new'].iterrows():
                 html_content += f"<tr><td>{stock_id}</td><td>{row['stock_name']}</td><td class='num'>{int(row['shares']):,}</td><td class='num'>{row['weight']}%</td></tr>"
             html_content += "</tbody></table>"
         else:
-            html_content += "<p>No new positions.</p>"
-            
-        # Exited Positions
+            html_content += "<p>本日無新增持股。</p>"
+
+        # 移除持股
         if not data['exit'].empty:
-            html_content += "<h3>Exited Positions</h3><table><thead><tr><th>Stock ID</th><th>Name</th><th>Shares (Prev)</th><th>Weight % (Prev)</th></tr></thead><tbody>"
+            html_content += "<h3>移除持股</h3><table><thead><tr><th>股票代號</th><th>股票名稱</th><th>前期股數</th><th>前期權重 %</th></tr></thead><tbody>"
             for stock_id, row in data['exit'].iterrows():
                 html_content += f"<tr><td>{stock_id}</td><td>{row['stock_name']}</td><td class='num'>{int(row['shares']):,}</td><td class='num'>{row['weight']}%</td></tr>"
             html_content += "</tbody></table>"
         else:
-            html_content += "<p>No exited positions.</p>"
-            
-        # Changed Positions
+            html_content += "<p>本日無移除持股。</p>"
+
+        # 異動持股
         if not data['changed'].empty:
-            html_content += "<h3>Holdings Changes (Shares & Weight)</h3><table><thead><tr><th>Stock ID</th><th>Name</th><th>Shares (Prev)</th><th>Shares (Curr)</th><th>Diff</th><th>Weight (Prev)</th><th>Weight (Curr)</th><th>Diff</th></tr></thead><tbody>"
+            html_content += "<h3>持倉異動（股數與權重）</h3><table><thead><tr><th>股票代號</th><th>股票名稱</th><th>前期股數</th><th>本期股數</th><th>股數差異</th><th>前期權重</th><th>本期權重</th><th>權重差異</th></tr></thead><tbody>"
             for stock_id, row in data['changed'].iterrows():
                 w_diff = row['weight_diff']
                 w_color = "increase" if w_diff > 0 else ("decrease" if w_diff < 0 else "")
@@ -306,7 +307,7 @@ def generate_html_report(diff_data, date_str):
                 """
             html_content += "</tbody></table>"
         else:
-            html_content += "<p>No significant changes.</p>"
+            html_content += "<p>本日無顯著異動。</p>"
             
         html_content += "</div>"
         
@@ -319,7 +320,7 @@ def generate_html_report(diff_data, date_str):
     with open(report_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
         
-    print(f"\n[REPORT] Generated HTML report: {report_file}")
+    print(f"\n[報告] 已產生 HTML 報告：{report_file}")
     
     # Generate Index Page (for GitHub Pages)
     generate_index_page(date_str)
@@ -340,7 +341,7 @@ def generate_index_page(latest_date):
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Active ETF Monitor - Latest Report</title>
+        <title>主動型 ETF 監控 - 最新報告</title>
         <meta http-equiv="refresh" content="0; url=etf_data/report_{latest_date}.html" />
         <style>
             body {{ font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }}
@@ -348,9 +349,9 @@ def generate_index_page(latest_date):
         </style>
     </head>
     <body>
-        <h1>Active ETF Monitor</h1>
-        <p>Redirecting to latest report: <a href="etf_data/report_{latest_date}.html">{latest_date}</a></p>
-        <p><small>Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</small></p>
+        <h1>主動型 ETF 監控</h1>
+        <p>正在跳轉至最新報告：<a href="etf_data/report_{latest_date}.html">{latest_date}</a></p>
+        <p><small>最後更新時間：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</small></p>
     </body>
     </html>
     """
@@ -358,13 +359,13 @@ def generate_index_page(latest_date):
     # Index goes in the root directory, not etf_data
     with open("index.html", 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print(f"[INFO] Updated index.html to point to report_{latest_date}.html")
+    print(f"[資訊] 已更新 index.html，指向 report_{latest_date}.html")
 
 if __name__ == "__main__":
     try:
         monitor_etfs()
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"發生未預期的錯誤：{e}")
         import traceback
         traceback.print_exc()
-        input("Press Enter to exit...") # Keep window open if double clicked
+        input("按 Enter 鍵離開...") # 若直接雙擊執行，保持視窗開啟

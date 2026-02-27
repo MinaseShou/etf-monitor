@@ -1,0 +1,42 @@
+name: 每日 ETF 持倉監控
+
+on:
+  schedule:
+    # 每天台灣時間 20:30 執行（UTC 12:30）
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+    # 允許手動觸發，方便測試
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允許推送回報告檔案
+
+    steps:
+      - name: 取出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安裝相依套件
+        run: pip install -r requirements.txt
+
+      - name: 執行 ETF 監控程式
+        run: python monitor_active_etfs.py
+
+      - name: 提交並推送報告
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add etf_data/ index.html
+          # 若有異動才提交
+          if ! git diff --cached --quiet; then
+            git commit -m "自動更新：每日 ETF 持倉報告 $(date +'%Y-%m-%d')"
+            git push
+          else
+            echo "無新異動，略過提交。"
+          fi
